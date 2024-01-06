@@ -48,23 +48,5 @@ def _fetch_player_page(url: str):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
 
-
-def _fetch_game_page(url: str):
-    time.sleep(1)
-    content = requests.get(url).text
-
-    cur_dir_path = os.path.dirname(__file__)
-    file_path = os.path.join(cur_dir_path, "cache", "game", f"{id}.html")
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
-
-def fetch_schedule_page(url: str):
-    time.sleep(1)
-    content = requests.get(url).text
-
-    cur_dir_path = os.path.dirname(__file__)
-    file_path = os.path.join(cur_dir_path, "cache", "schedule", f"{id}.html")
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
-
 if __name__ == "__main__":
+    cache_player_pages()
