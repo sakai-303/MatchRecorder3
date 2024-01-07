@@ -51,10 +51,12 @@ def cache_games():
         game_dir_path = os.path.join(os.path.dirname(__file__), "cache", "game", game_id)
         score_dir_path = os.path.join(game_dir_path, "score")
         
-        if not os.path.exists(game_dir_path):
-            os.makedirs(game_dir_path)
-        if not os.path.exists(score_dir_path):
-            os.makedirs(score_dir_path)
+        if os.path.exists(game_dir_path):
+            print(f"pass: {game_id}")
+            continue
+
+        os.makedirs(game_dir_path)
+        os.makedirs(score_dir_path)
         
         _fetch_page(game_url + "/top", os.path.join(game_dir_path, "top.html"))
         _fetch_page(game_url + "/stats", os.path.join(game_dir_path, "stats.html"))
@@ -101,7 +103,7 @@ def _fetch_game_score(game_url: str, score_dir_path: str):
 
         soup = BeautifulSoup(content, "html.parser")
         element = soup.select_one("#btn_next")
-        if element.get("href") is None:
+        if element is None or element.get("href") is None:
             break
         url = root_url + element.get("href")
 
