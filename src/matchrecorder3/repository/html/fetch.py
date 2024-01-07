@@ -53,13 +53,12 @@ def cache_games():
         
         if not os.path.exists(game_dir_path):
             os.makedirs(game_dir_path)
+        if not os.path.exists(score_dir_path):
             os.makedirs(score_dir_path)
         
-        print("=====")
         _fetch_page(game_url + "/top", os.path.join(game_dir_path, "top.html"))
         _fetch_page(game_url + "/stats", os.path.join(game_dir_path, "stats.html"))
         _fetch_game_score(game_url, score_dir_path)
-        print("=====")
 
 # ex: https://baseball.yahoo.co.jp/npb/game/2021015004/index
 def _get_game_urls(latest_week_url: str) -> list[str]:
@@ -102,9 +101,8 @@ def _fetch_game_score(game_url: str, score_dir_path: str):
 
         soup = BeautifulSoup(content, "html.parser")
         element = soup.select_one("#btn_next")
-        if element is None:
+        if element.get("href") is None:
             break
-
         url = root_url + element.get("href")
 
 def _fetch_page(url: str, file_path: str):
