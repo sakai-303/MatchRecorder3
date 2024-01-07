@@ -21,7 +21,10 @@ def cache_player_pages():
         for id in player_id_list:
             base_url = "https://baseball.yahoo.co.jp/npb/player"
             url = base_url + "/" + id + "/top"
-            _fetch_player_page(url)
+            
+            cur_dir_path = os.path.dirname(__file__)
+            file_path = os.path.join(cur_dir_path, "cache", "player", f"{id}.html")
+            _fetch_page(url, file_path)
 
 
 def _get_player_id_list(url: str) -> list[str]:
@@ -39,32 +42,15 @@ def _get_player_id_list(url: str) -> list[str]:
     return [link.split("/")[-2] for link in player_link_list]
 
 
-def _fetch_player_page(url: str):
+def _fetch_page(url: str, file_path: str):
     time.sleep(1)
     content = requests.get(url).text
 
-    cur_dir_path = os.path.dirname(__file__)
-    file_path = os.path.join(cur_dir_path, "cache", "player", f"{id}.html")
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
+    file_name = os.path.basename(file_path)
+    print(f"選手ページを取得: {file_name}")
 
-
-def _fetch_game_page(url: str):
-    time.sleep(1)
-    content = requests.get(url).text
-
-    cur_dir_path = os.path.dirname(__file__)
-    file_path = os.path.join(cur_dir_path, "cache", "game", f"{id}.html")
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
-
-def fetch_schedule_page(url: str):
-    time.sleep(1)
-    content = requests.get(url).text
-
-    cur_dir_path = os.path.dirname(__file__)
-    file_path = os.path.join(cur_dir_path, "cache", "schedule", f"{id}.html")
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
 
 if __name__ == "__main__":
+   cache_player_pages() 
