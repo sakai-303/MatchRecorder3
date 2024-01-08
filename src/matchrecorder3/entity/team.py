@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
+
 @dataclass
-class GameData:
+class Team:
     id: int
-    date: datetime
+    name: str
