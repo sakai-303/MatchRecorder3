@@ -1,5 +1,5 @@
-import datetime
 from dataclasses import dataclass
+
 
 @dataclass
 class Bat:
@@ -7,7 +7,7 @@ class Bat:
     game_id: int
     inning: int
     attacking_team: str
-    deffanding_team: str
+    defending_team: str
     is_out: bool
     rbi: int
     result_big: str
