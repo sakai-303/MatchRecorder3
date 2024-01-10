@@ -87,7 +87,6 @@ class Bat:
     defending_team_id: int
     is_on_base: bool
     rbi: int
-    is_terminated_by_runner_out: bool
 
 
 @dataclass(frozen=True)

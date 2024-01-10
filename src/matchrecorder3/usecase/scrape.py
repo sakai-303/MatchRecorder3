@@ -1,6 +1,6 @@
 import datetime
-import uuid
 import re
+import uuid
 
 from bs4 import BeautifulSoup
 from entity.entity import Bat, FielderResult, Game, PitcherResult, PitchStats
@@ -508,10 +508,6 @@ def _scrape_bat(
 
     rbi = int(result_big_element.text).text[-2]
 
-    is_terminated_by_runner_out_element = soup.select_one(
-        "#gm_score > section.bb-scoreTable > table > tbody > tr:nth-child(3) > td:nth-child(5)"
-    )
-
     bat = Bat(
         id=bat_id,
         game_id=game_id,
@@ -520,8 +516,6 @@ def _scrape_bat(
         defending_team_id=defending_team_id,
         is_on_base=is_on_base,
         rbi=rbi,
-        result_big=result_big,
-        result_small=result_small,
     )
 
     add_bat(bat, year)
