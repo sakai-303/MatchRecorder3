@@ -26,7 +26,7 @@ def cache_players():
 
             cur_dir_path = os.path.dirname(__file__)
             file_path = os.path.join(cur_dir_path, "cache", "player", f"{id}.html")
-            _fetch_page(url, file_path)
+            _fetch_page(url, file_path, force=True)
 
 
 def _get_player_id_list(url: str) -> list[str]:
@@ -43,11 +43,13 @@ def _get_player_id_list(url: str) -> list[str]:
 
 
 def cache_games():
+    # TODO: 年度を指定できるようにする(年度ごとのディレクトリを作成する)
     interleague_latest_url = "https://baseball.yahoo.co.jp/npb/schedule/?gameKindIds=26"
     league_latest_url = "https://baseball.yahoo.co.jp/npb/schedule/?gameKindIds=1,2"
 
-    # game_urls = _get_game_urls(interleague_latest_url) + _get_game_urls(league_latest_url)
-    game_urls = _get_game_urls(interleague_latest_url)
+    game_urls = _get_game_urls(interleague_latest_url) + _get_game_urls(
+        league_latest_url
+    )
 
     for game_url in game_urls:
         game_url = game_url.replace("/index", "")
@@ -57,12 +59,10 @@ def cache_games():
         )
         score_dir_path = os.path.join(game_dir_path, "score")
 
-        if os.path.exists(game_dir_path):
-            print(f"pass: {game_id}")
-            continue
+        if not os.path.exists(game_dir_path):
+            os.makedirs(game_dir_path)
+            os.makedirs(score_dir_path)
 
-        os.makedirs(game_dir_path)
-        os.makedirs(score_dir_path)
 
         _fetch_page(game_url + "/top", os.path.join(game_dir_path, "top.html"))
         _fetch_page(game_url + "/stats", os.path.join(game_dir_path, "stats.html"))
@@ -93,23 +93,30 @@ def _get_game_urls(latest_week_url: str) -> list[str]:
     return l
 
 
-def _fetch_game_score(game_url: str, score_dir_path: str):
+def _fetch_game_score(game_url: str, score_dir_path: str, force: bool = False):
     url = game_url + "/score?index=0110100"
 
     while True:
-        time.sleep(1)
-        content = requests.get(url).text
-
         score_id = url[-7:]
         file_path = os.path.join(score_dir_path, f"{score_id}.html")
 
-        components = file_path.split(os.sep)
-        cache_index = components.index("cache")
-        subpath = os.sep.join(components[cache_index:])
-        print(f"ページを取得: {url} → {subpath}")
+        if not os.path.exists(file_path):
+            time.sleep(2)
+            content = requests.get(url).text
 
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(content)
+
+            components = file_path.split(os.sep)
+            cache_index = components.index("cache")
+            subpath = os.sep.join(components[cache_index:])
+            print(f"ページを取得: {url} → {subpath}")
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+        else:
+            print(f"pass: {url}")
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
 
         soup = BeautifulSoup(content, "html.parser")
         element = soup.select_one("#btn_next")
@@ -118,8 +125,12 @@ def _fetch_game_score(game_url: str, score_dir_path: str):
         url = root_url + element.get("href")
 
 
-def _fetch_page(url: str, file_path: str):
-    time.sleep(1)
+def _fetch_page(url: str, file_path: str, force: bool = False):
+    if os.path.exists(file_path) and not force:
+        print(f"pass: {url}")
+        return
+
+    time.sleep(2)
     content = requests.get(url).text
 
     components = file_path.split(os.sep)
