@@ -552,13 +552,13 @@ def _scrape_pitch_stats(
             "#pitcherR > div > table > tbody > tr > td:nth-child(2) > table > tbody > tr.nm_box > td.dominantHand"
         )
 
-    pitcher_id = pitcher_id_element.get("href").split("/")[-2]
+    pitcher_id = int(pitcher_id_element.get("href").split("/")[-2])
     is_pitcher_left = "左" in is_pitcher_left_element.text
 
     batter_id_element = soup.select_one(
         "#batt > tbody > tr > td:nth-child(2) > table > tbody > tr.nm_box > td.nm > a"
     )
-    batter_id = batter_id_element.get("href").split("/")[-2]
+    batter_id = int(batter_id_element.get("href").split("/")[-2])
 
     is_batter_left_element = soup.select_one(
         "#batt > tbody > tr > td:nth-child(2) > table > tbody > tr.nm_box > td.dominantHand"
@@ -592,7 +592,7 @@ def _scrape_pitch_stats(
     fielder_map = {}
     for fielder_element in fielder_element_list:
         position = fielder_element.select_one("td:nth-child(2)").text
-        player_id = (
+        player_id = int(
             fielder_element.select_one("td:nth-child(3) > a").get("href").split("/")[-2]
         )
 
@@ -603,7 +603,7 @@ def _scrape_pitch_stats(
         player_name = attack_player_element.select_one(
             "td:nth-child(3) > a"
         ).text.split(" ")[0]
-        player_id = (
+        player_id = int(
             attack_player_element.select_one("td:nth-child(3) > a")
             .get("href")
             .split("/")[-2]
@@ -668,7 +668,7 @@ def _scrape_pitch_stats(
             is_last_ball = True
 
         pitch_stats = PitchStats(
-            id=str(uuid.uuid4()),
+            uuid=str(uuid.uuid4()),
             id_at_bat=bat_id,
             pitcher_id=pitcher_id,
             is_pitcher_left=is_pitcher_left,

@@ -91,9 +91,9 @@ class Bat:
 
 @dataclass(frozen=True)
 class PitchStats:
-    id: int
+    uuid: str
     id_at_bat: int
-    pitcher_id: str
+    pitcher_id: int
     is_pitcher_left: bool
     batter_id: int
     is_batter_left: bool
@@ -128,7 +128,7 @@ class PitchStats:
 class Player:
     id: int
     name: str
-    team: str
+    team_id: int
     uniform_number: int
     position: str
     date_of_birth: date
