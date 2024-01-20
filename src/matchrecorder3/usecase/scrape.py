@@ -432,7 +432,7 @@ def _scrape_pitcher_result(game_id: str, year: int):
 def _scrape_score_page(game_id: str, year: int):
     score_page_generator = get_score_page_generator(game_id)
 
-    source_page = next(score_page_generator)
+    score_page = next(score_page_generator)
     while True:
         try:
             next_page = next(score_page_generator)
@@ -440,14 +440,14 @@ def _scrape_score_page(game_id: str, year: int):
             break
 
         print("Scraping Bat ID: ", score_page.id)
-        soup = BeautifulSoup(source_page.source, "html.parser")
+        soup = BeautifulSoup(score_page.source, "html.parser")
         next_soup = BeautifulSoup(next_page.source, "html.parser")
 
         if soup.select_one("#replay > dt").text == "":
             continue
 
-        _scrape_bat(soup, next_soup, game_id, source_page.id, year)
-        _scrape_pitch_stats(soup, next_soup, game_id, source_page.id, year)
+        _scrape_bat(soup, next_soup, game_id, score_page.id, year)
+        _scrape_pitch_stats(soup, next_soup, game_id, score_page.id, year)
 
         score_page = next_page
 
@@ -507,7 +507,10 @@ def _scrape_bat(
     else:
         is_on_base = False
 
-    rbi = int(result_big_element.text).text[-2]
+    if result_big_element.text[-1] == "点" and result_big_element.text[-3] == "+":
+        rbi = int(result_big_element.text).text[-2]
+    else:
+        rbi = 0
 
     bat = Bat(
         id=bat_id,
