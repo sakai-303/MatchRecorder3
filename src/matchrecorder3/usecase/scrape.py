@@ -433,13 +433,14 @@ def _scrape_score_page(game_id: str, year: int):
     score_page_generator = get_score_page_generator(game_id)
 
     source_page = next(score_page_generator)
-    soup = BeautifulSoup(source_page.source, "html.parser")
     while True:
         try:
             next_page = next(score_page_generator)
         except StopIteration:
             break
 
+        print("Scraping Bat ID: ", score_page.id)
+        soup = BeautifulSoup(source_page.source, "html.parser")
         next_soup = BeautifulSoup(next_page.source, "html.parser")
 
         if soup.select_one("#replay > dt").text == "":
@@ -448,7 +449,7 @@ def _scrape_score_page(game_id: str, year: int):
         _scrape_bat(soup, next_soup, game_id, source_page.id, year)
         _scrape_pitch_stats(soup, next_soup, game_id, source_page.id, year)
 
-        soup = next_soup
+        score_page = next_page
 
 
 def _scrape_bat(
