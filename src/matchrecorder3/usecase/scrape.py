@@ -23,7 +23,12 @@ def scrape(year: int):
     game_id_list = get_game_ids(year)
 
     for game_id in game_id_list:
-        # TODO: ノーゲームのチェック
+        top_page = get_top_page(game_id)
+        soup = BeautifulSoup(top_page, "html.parser")
+        stats = soup.select_one("#async-statusComment > section > header > h2").text
+        if stats == "試合終了" or "ノーゲーム":
+            continue
+        
         _scrape_game(game_id, year)
         _scrape_fielder_result(game_id, year)
 
@@ -439,15 +444,18 @@ def _scrape_score_page(game_id: str, year: int):
         except StopIteration:
             break
 
-        print("Scraping Bat ID: ", score_page.id)
         soup = BeautifulSoup(score_page.source, "html.parser")
         next_soup = BeautifulSoup(next_page.source, "html.parser")
 
-        if soup.select_one("#replay > dt").text == "":
+        if soup.select_one("#batt > tbody > tr > td:nth-child(2)") == None: 
+            print("continue: ", score_page.id)
+            score_page = next_page
             continue
 
-        _scrape_bat(soup, next_soup, game_id, score_page.id, year)
-        _scrape_pitch_stats(soup, next_soup, game_id, score_page.id, year)
+        print("Scraping File ID: ", score_page.id)
+        bat_id = score_page.id[:-2]
+        _scrape_bat(soup, next_soup, game_id, bat_id, year)
+        _scrape_pitch_stats(soup, next_soup, game_id, bat_id, year)
 
         score_page = next_page
 
@@ -457,7 +465,7 @@ def _scrape_bat(
 ):
     if (
         soup.select_one("#replay > dt").text
-        == next_soup.select_one("#replay > dt").text
+        == next_soup.select_one("#replay > dt").text and next_soup.select_one("#liveinfo > p").text != "試合終了"
     ):
         return
 
@@ -525,36 +533,26 @@ def _scrape_bat(
     add_bat(bat, year)
 
 
+_pitch_num = 0
 def _scrape_pitch_stats(
     soup: BeautifulSoup, next_soup: BeautifulSoup, game_id: str, bat_id: str, year: int
 ):
-    if (
-        soup.select_one("#replay > dt").text
-        == next_soup.select_one("#replay > dt").text
-    ):
-        _pitch_num_elements = soup.select(
-            "#pitchesDetail > section:nth-child(2) > table:nth-child(3) > tbody > tr"
-        )
-        _pitch_num = len(_pitch_num_elements)
-    else:
-        _pitch_num = 0
+    global _pitch_num
 
     inning_element = soup.select_one("#sbo > h4 > em")
 
     if inning_element.text[-1] == "表":
-        pitcher_id_element = soup.select_one(
-            "#pitcherL > div > table > tbody > tr > td:nth-child(2) > table > tbody > tr.nm_box > td.nm > a"
-        )
-        is_pitcher_left_element = soup.select_one(
-            "#pitcherL > div > table > tbody > tr > td:nth-child(2) > table > tbody > tr.nm_box > td.dominantHand"
-        )
+        pitch_side = "L"
+
     else:
-        pitcher_id_element = soup.select_one(
-            "#pitcherR > div > table > tbody > tr > td:nth-child(2) > table > tbody > tr.nm_box > td.nm > a"
-        )
-        is_pitcher_left_element = soup.select_one(
-            "#pitcherR > div > table > tbody > tr > td:nth-child(2) > table > tbody > tr.nm_box > td.dominantHand"
-        )
+        pitch_side = "R"
+
+    pitcher_id_element = soup.select_one(
+        f"#pitcher{pitch_side} > div > table > tbody > tr > td:nth-child(2) > table > tbody > tr.nm_box > td.nm > a"
+    )
+    is_pitcher_left_element = soup.select_one(
+        f"#pitcher{pitch_side} > div > table > tbody > tr > td:nth-child(2) > table > tbody > tr.nm_box > td.dominantHand"
+    )
 
     pitcher_id = pitcher_id_element.get("href").split("/")[-2]
     is_pitcher_left = "左" in is_pitcher_left_element.text
@@ -578,7 +576,7 @@ def _scrape_pitch_stats(
         in_box_count = len(in_box_count_elements) + 1
 
     match_count_element = soup.select_one(
-        "#pitcherL > div.card.team376 > table > tbody > tr > td:nth-child(2) > table > tbody > tr.score > td:nth-child(2)"
+        f"#pitcher{pitch_side} > div.card > table > tbody > tr > td:nth-child(2) > table > tbody > tr.score > td:nth-child(2)"
     )
     match_count = int(match_count_element.text)
 
@@ -604,16 +602,23 @@ def _scrape_pitch_stats(
 
     attack_player_map = {}
     for attack_player_element in attack_player_element_list:
-        player_name = attack_player_element.select_one(
+        # 名字のみとフルネームどちらも対応
+        player_name_1 = attack_player_element.select_one(
             "td:nth-child(3) > a"
         ).text.split(" ")[0]
+        
+        player_name_2 = attack_player_element.select_one(
+            "td:nth-child(3) > a"
+        ).text.replace(" ", "")
+
         player_id = (
             attack_player_element.select_one("td:nth-child(3) > a")
             .get("href")
             .split("/")[-2]
         )
 
-        attack_player_map[player_name] = player_id
+        attack_player_map[player_name_1] = player_id
+        attack_player_map[player_name_2] = player_id
 
     first_runner_element = soup.select_one("#base1 > span")
     second_runner_element = soup.select_one("#base2 > span")
@@ -652,7 +657,8 @@ def _scrape_pitch_stats(
         pitch_count_at_game = int(ball_element.select_one("td:nth-child(2)").text)
         ball_type = ball_element.select_one("td:nth-child(3)").text
         speed = int(ball_element.select_one("td:nth-child(4)").text[:-4])
-        ball_result = ball_element.select_one("td:nth-child(5)").text
+        ball_result_text = ball_element.select_one("td:nth-child(5)").text
+        ball_result = " ".join(ball_result_text.split())
 
         ball_point_element = soup.select_one(
             f"#pitchesDetail > section:nth-child(2) > table:nth-child(1) > tbody > tr > td > div > span:nth-child({i+1})"
@@ -708,9 +714,18 @@ def _scrape_pitch_stats(
         add_pitch_stats(pitch_stats, year)
 
         ball_result_type_element = ball_element.select_one("td:nth-child(1) > span")
-        type = ball_result_type_element.get("class")[2][-1]
+        type = ball_result_type_element.get("class")[1][-1]
 
         if type == "1":
             strike_count += 1
         elif type == "2":
             ball_count += 1
+
+    # 次のページも同じ打者ならpitch_numに今の球数を保存
+    if (
+        soup.select_one("#replay > dt").text
+        == next_soup.select_one("#replay > dt").text
+    ):
+        _pitch_num = len(ball_element_list)
+    else:
+        _pitch_num = 0
